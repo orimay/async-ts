@@ -1,0 +1,71 @@
+{
+  "name": "async-ts",
+  "version": "1.0.0",
+  "description": "Advanced asynchronous utilities for TypeScript/JavaScript: promise barriers, mutex locks, read-write mutexes, latches, async filters, predicates (some/every/none), async generator utilities, microtasks, macrotasks, animation frames, and more for concurrency control, task scheduling, iteration, and synchronization in browser/Node.js environments.",
+  "type": "module",
+  "license": "MIT",
+  "homepage": "https://github.com/orimay/async-ts#readme",
+  "bugs": {
+    "url": "https://github.com/orimay/async-ts/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/orimay/async-ts.git"
+  },
+  "author": "Dmitrii Baranov <dmitrii.a.baranov@gmail.com>",
+  "keywords": [
+    "async",
+    "promise",
+    "mutex",
+    "lock",
+    "read-write-lock",
+    "latch",
+    "barrier",
+    "synchronization",
+    "concurrency",
+    "task-scheduling",
+    "microtask",
+    "macrotask",
+    "animation-frame",
+    "async-filter",
+    "promise-some",
+    "promise-every",
+    "promise-none",
+    "async-generator",
+    "typescript",
+    "javascript",
+    "async-await",
+    "using-statement",
+    "disposable",
+    "event-loop",
+    "performance",
+    "browser",
+    "node-js",
+    "full-stack",
+    "utilities"
+  ],
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "test": "vitest",
+    "typecheck": "tsc --noEmit",
+    "release": "bun run test run && bun run build && bumpp && bun publish"
+  },
+  "devDependencies": {
+    "@types/node": "^24.9.1",
+    "bumpp": "^10.3.1",
+    "tsdown": "^0.15.9",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.1"
+  }
+}
