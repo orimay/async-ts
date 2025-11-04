@@ -45,7 +45,7 @@ describe('promise-barrier', { timeout: 10000 }, () => {
 
     barrier.add(timeout(50));
 
-    await timeout(30); // After first resolves, but before second
+    await timeout(20); // After first resolves, but before second
     await ensureTimesOut(barrier);
 
     await timeout(30);
