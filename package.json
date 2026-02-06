@@ -1,6 +1,6 @@
 {
   "name": "async-ts",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Advanced asynchronous utilities for TypeScript/JavaScript: promise barriers, mutex locks, read-write mutexes, latches, async filters, predicates (some/every/none), async generator utilities, microtasks, macrotasks, animation frames, and more for concurrency control, task scheduling, iteration, and synchronization in browser/Node.js environments.",
   "type": "module",
   "license": "MIT",
