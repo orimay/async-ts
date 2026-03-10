@@ -632,23 +632,27 @@ class RateLimiter {
 
 ### Mutex
 
-- `obtain(bypass?: boolean)`: Acquire lock, returns release function
-- `lock(bypass?: boolean)`: Acquire lock, returns disposable
-- `waitingCount`: Number of waiting tasks
-- `isLocked`: Whether mutex is locked
+| Method / Property | Description |
+| --- | --- |
+| `obtain(bypass?: boolean)` | Acquire lock, returns release function |
+| `lock(bypass?: boolean)` | Acquire lock, returns disposable |
+| `waitingCount` | Number of waiting tasks |
+| `isLocked` | Whether mutex is locked |
 
 ### MutexRW
 
-- `obtainRead()`: Acquire read lock, returns release function
-- `obtainWrite()`: Acquire write lock, returns release function
-- `lockRead()`: Acquire read lock, returns disposable
-- `lockWrite()`: Acquire write lock, returns disposable
-- `readWaitingCount`: Number of tasks waiting for read lock
-- `writeWaitingCount`: Number of tasks waiting for write lock
-- `activeReadCount`: Number of active readers
-- `isReadLocked`: Whether read locks are currently held
-- `isWriteLocked`: Whether write lock is currently held
-- `obtainRO()`, `obtainRW()`, `lockRO()`, `lockRW()`: Deprecated aliases
+| Method / Property | Description |
+| --- | --- |
+| `obtainRead()` | Acquire read lock, returns release function |
+| `obtainWrite()` | Acquire write lock, returns release function |
+| `lockRead()` | Acquire read lock, returns disposable |
+| `lockWrite()` | Acquire write lock, returns disposable |
+| `readWaitingCount` | Number of tasks waiting for read lock |
+| `writeWaitingCount` | Number of tasks waiting for write lock |
+| `activeReadCount` | Number of active readers |
+| `isReadLocked` | Whether read locks are currently held |
+| `isWriteLocked` | Whether write lock is currently held |
+| `obtainRO()`, `obtainRW()`, `lockRO()`, `lockRW()` | Deprecated aliases |
 
 For full API details, refer to the JSDoc in the source code.
 
