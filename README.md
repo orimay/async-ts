@@ -201,7 +201,29 @@ await barrier.free; // Waits for all three to settle
 
 ### Mutex
 
-Simple exclusive lock.
+Simple exclusive lock for preventing race conditions in critical sections.
+
+#### Status Properties
+
+```typescript
+import { Mutex } from 'async-ts';
+
+const mutex = new Mutex();
+
+// Check lock status
+console.log(mutex.isLocked); // false
+console.log(mutex.waitingCount); // 0
+
+const release = await mutex.obtain();
+console.log(mutex.isLocked); // true
+console.log(mutex.waitingCount); // 0 (no one waiting yet)
+
+// Another task waiting
+const promise = mutex.obtain();
+console.log(mutex.waitingCount); // 1
+
+release();
+```
 
 #### Manual Lock Management
 
@@ -213,35 +235,40 @@ const release = await mutex.obtain();
 
 try {
   // Critical section
+  await updateSharedResource();
 } finally {
   release();
 }
 ```
 
-With bypass:
+#### With Bypass (Conditional Locking)
 
 ```typescript
-const shouldBypass = true; // Runtime condition
+const shouldBypass = checkCondition(); // Runtime condition
 const release = await mutex.obtain(shouldBypass);
 try {
   // Optional critical section
+  await maybeUpdateResource();
 } finally {
   release();
 }
 ```
 
-#### Using Disposable Locks with `using`
+#### Using Disposable Locks with `using` (Recommended)
 
 ```typescript
 import { Mutex } from 'async-ts';
 
+const mutex = new Mutex();
+
 {
   using _ = await mutex.lock();
-  // Critical section, auto-released
+  // Critical section, automatically released when scope exits
+  await updateSharedResource();
 }
 ```
 
-With bypass:
+#### With Bypass
 
 ```typescript
 {
@@ -250,9 +277,52 @@ With bypass:
 }
 ```
 
+#### Monitoring Lock Contention
+
+```typescript
+const mutex = new Mutex();
+
+// Performance monitoring
+setInterval(() => {
+  if (mutex.waitingCount > 10) {
+    console.warn(`High lock contention: ${mutex.waitingCount} tasks waiting`);
+    // Consider scaling or load balancing
+  }
+}, 1000);
+
+// Adaptive behavior
+async function smartOperation() {
+  if (mutex.waitingCount > 5) {
+    // Too much contention, try alternative approach
+    await useCache();
+  } else {
+    using _ = await mutex.lock();
+    await updateDatabase();
+  }
+}
+```
+
 ### MutexRW
 
-Read-write lock for concurrent reads.
+Read-write lock for optimized concurrent access. Allows multiple simultaneous
+readers but exclusive writers.
+
+#### Status Properties
+
+```typescript
+import { MutexRW } from 'async-ts';
+
+const mutexRW = new MutexRW();
+
+// Read lock status
+console.log(mutexRW.readWaitingCount); // Tasks waiting for read lock
+console.log(mutexRW.activeReadCount); // Tasks currently reading
+console.log(mutexRW.isReadLocked); // Whether read locks are held
+
+// Write lock status
+console.log(mutexRW.writeWaitingCount); // Tasks waiting for write lock
+console.log(mutexRW.isWriteLocked); // Whether write lock is held
+```
 
 #### Manual Lock Management
 
@@ -260,33 +330,185 @@ Read-write lock for concurrent reads.
 import { MutexRW } from 'async-ts';
 
 const mutexRW = new MutexRW();
-const releaseRO = await mutexRW.obtainRO();
+
+// Read operation
+const releaseRead = await mutexRW.obtainRead();
 try {
-  // Read operation
+  // Multiple readers can access simultaneously
+  const data = await readFromCache();
+  console.log(`Active readers: ${mutexRW.activeReadCount}`);
 } finally {
-  releaseRO();
+  releaseRead();
 }
 
-const releaseRW = await mutexRW.obtainRW();
+// Write operation
+const releaseWrite = await mutexRW.obtainWrite();
 try {
-  // Write operation
+  // Exclusive access - no readers or other writers
+  await writeToCache(newData);
+  console.log(`Write lock held: ${mutexRW.isWriteLocked}`); // true
 } finally {
-  releaseRW();
+  releaseWrite();
 }
 ```
 
-#### Using Disposable Locks with `using`
+#### Using Disposable Locks with `using` (Recommended)
 
 ```typescript
 {
-  using _ = await mutexRW.lockRO();
-  // Read section, auto-released
+  using _ = await mutexRW.lockRead();
+  // Read section, automatically released
+  const data = await readData();
 }
 
 {
-  using _ = await mutexRW.lockRW();
-  // Write section, auto-released
+  using _ = await mutexRW.lockWrite();
+  // Write section, automatically released
+  await writeData(newData);
 }
+```
+
+#### Real-World Cache Example
+
+```typescript
+import { MutexRW } from 'async-ts';
+
+class Cache<K, V> {
+  private data = new Map<K, V>();
+  private lock = new MutexRW();
+
+  async get(key: K): Promise<V | undefined> {
+    using _ = await this.lock.lockRead();
+    return this.data.get(key);
+  }
+
+  async set(key: K, value: V): Promise<void> {
+    using _ = await this.lock.lockWrite();
+    this.data.set(key, value);
+  }
+
+  async batchRead(keys: K[]): Promise<Map<K, V>> {
+    using _ = await this.lock.lockRead();
+    const result = new Map<K, V>();
+    for (const key of keys) {
+      const value = this.data.get(key);
+      if (value !== undefined) result.set(key, value);
+    }
+    return result;
+  }
+
+  async clear(): Promise<void> {
+    using _ = await this.lock.lockWrite();
+    this.data.clear();
+  }
+
+  // Monitor cache performance
+  getStats() {
+    return {
+      activeReaders: this.lock.activeReadCount,
+      readWaiters: this.lock.readWaitingCount,
+      writeWaiters: this.lock.writeWaitingCount,
+      isReadLocked: this.lock.isReadLocked,
+      isWriteLocked: this.lock.isWriteLocked,
+    };
+  }
+}
+```
+
+#### Performance Monitoring
+
+```typescript
+const mutexRW = new MutexRW();
+
+// Comprehensive status check
+function logLockStatus() {
+  console.log('Lock Status:', {
+    activeReaders: mutexRW.activeReadCount,
+    readWaiters: mutexRW.readWaitingCount,
+    writeWaiters: mutexRW.writeWaitingCount,
+    isReadLocked: mutexRW.isReadLocked,
+    isWriteLocked: mutexRW.isWriteLocked,
+  });
+}
+
+// Adaptive behavior based on contention
+async function smartRead() {
+  if (mutexRW.readWaitingCount > 20) {
+    // Too many readers waiting (likely writer blocking)
+    // Use stale cache or alternative source
+    return await getStaleData();
+  }
+
+  using _ = await mutexRW.lockRead();
+  return await readFreshData();
+}
+
+async function smartWrite() {
+  if (mutexRW.writeWaitingCount > 5) {
+    // Many writers queued, consider batching
+    await addToBatch(data);
+  } else {
+    using _ = await mutexRW.lockWrite();
+    await writeImmediately(data);
+  }
+}
+```
+
+#### Writer Starvation Prevention Example
+
+```typescript
+// MutexRW prevents writer starvation by ensuring writers
+// get priority over new readers once a writer is queued
+
+const mutexRW = new MutexRW();
+
+// Reader 1 acquires lock
+const read1 = await mutexRW.obtainRead();
+console.log(mutexRW.isReadLocked); // true
+
+// Writer queues (will wait for reader 1)
+const writePromise = mutexRW.obtainWrite();
+console.log(mutexRW.writeWaitingCount); // 1 (waiting)
+console.log(mutexRW.isWriteLocked); // false (not held yet)
+
+// Reader 2 tries to acquire - will wait for writer!
+const read2Promise = mutexRW.obtainRead();
+console.log(mutexRW.readWaitingCount); // 1 (waiting)
+
+// Release reader 1 - writer gets priority
+read1();
+const writeRelease = await writePromise;
+
+console.log(mutexRW.isWriteLocked); // true (now held)
+console.log(mutexRW.isReadLocked); // false
+console.log(mutexRW.activeReadCount); // 0
+
+// Writer completes - reader 2 can now proceed
+writeRelease();
+const read2 = await read2Promise;
+console.log(mutexRW.isReadLocked); // true
+console.log(mutexRW.activeReadCount); // 1
+read2();
+```
+
+#### Backward Compatibility
+
+The old API is still supported for backward compatibility:
+
+```typescript
+// Old API (deprecated but still works)
+const releaseRO = await mutexRW.obtainRO();
+const releaseRW = await mutexRW.obtainRW();
+
+using _ = await mutexRW.lockRO();
+using _ = await mutexRW.lockRW();
+
+// New API (recommended)
+const releaseRead = await mutexRW.obtainRead();
+const releaseWrite = await mutexRW.obtainWrite();
+
+using _ = await mutexRW.lockRead();
+using _ = await mutexRW.lockWrite();
 ```
 
 ### Latch
@@ -323,6 +545,8 @@ latch.open();
 
 - **Error Handling**: Always use `try...finally` for manual releases to prevent
   leaks or deadlocks.
+- **Recommended Pattern**: Prefer `using` syntax for automatic resource
+  management when possible.
 - **Performance**: These primitives are optimized for async use; avoid in hot
   loops without necessity.
 - **Compatibility**: Test in your target environments, especially for
@@ -330,6 +554,101 @@ latch.open();
 - **Debugging**: Uncomment deadlock detection in `MutexRW` for development.
 - **Integration**: Pairs well with libraries like RxJS, Redux-Saga, or Node.js
   clusters for advanced concurrency.
+- **Monitoring**: Use status properties (`waitingCount`, `activeReadCount`,
+  etc.) to monitor lock contention and optimize performance.
+
+## Common Patterns
+
+### Database Connection Pool
+
+```typescript
+import { Mutex } from 'async-ts';
+
+class ConnectionPool {
+  private connections: Connection[] = [];
+  private lock = new Mutex();
+
+  async acquire(): Promise<Connection> {
+    using _ = await this.lock.lock();
+
+    if (this.connections.length === 0) {
+      return await this.createConnection();
+    }
+
+    return this.connections.pop()!;
+  }
+
+  async release(conn: Connection): Promise<void> {
+    using _ = await this.lock.lock();
+    this.connections.push(conn);
+  }
+
+  getStats() {
+    return {
+      available: this.connections.length,
+      waitingForConnection: this.lock.waitingCount,
+    };
+  }
+}
+```
+
+### Rate Limiter with Read-Write Lock
+
+```typescript
+import { MutexRW } from 'async-ts';
+
+class RateLimiter {
+  private tokens: number;
+  private lock = new MutexRW();
+
+  constructor(private maxTokens: number) {
+    this.tokens = maxTokens;
+  }
+
+  async checkAvailable(): Promise<boolean> {
+    using _ = await this.lock.lockRead();
+    return this.tokens > 0;
+  }
+
+  async consume(): Promise<boolean> {
+    using _ = await this.lock.lockWrite();
+
+    if (this.tokens > 0) {
+      this.tokens--;
+      return true;
+    }
+
+    return false;
+  }
+
+  async refill(): Promise<void> {
+    using _ = await this.lock.lockWrite();
+    this.tokens = this.maxTokens;
+  }
+}
+```
+
+## API Reference Summary
+
+### Mutex
+
+- `obtain(bypass?: boolean)`: Acquire lock, returns release function
+- `lock(bypass?: boolean)`: Acquire lock, returns disposable
+- `waitingCount`: Number of waiting tasks
+- `isLocked`: Whether mutex is locked
+
+### MutexRW
+
+- `obtainRead()`: Acquire read lock, returns release function
+- `obtainWrite()`: Acquire write lock, returns release function
+- `lockRead()`: Acquire read lock, returns disposable
+- `lockWrite()`: Acquire write lock, returns disposable
+- `readWaitingCount`: Number of tasks waiting for read lock
+- `writeWaitingCount`: Number of tasks waiting for write lock
+- `activeReadCount`: Number of active readers
+- `isReadLocked`: Whether read locks are currently held
+- `isWriteLocked`: Whether write lock is currently held
+- `obtainRO()`, `obtainRW()`, `lockRO()`, `lockRW()`: Deprecated aliases
 
 For full API details, refer to the JSDoc in the source code.
 

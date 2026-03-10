@@ -15,15 +15,12 @@ describe('promise-barrier', { timeout: 10000 }, () => {
     await ensureTimesOut(barrier, false);
   });
 
-  it.concurrent(
-    'resolves free immediately with already settled promises',
-    async () => {
-      const barrier = new PromiseBarrier();
-      barrier.add(Promise.resolve());
-      barrier.add(Promise.reject(new Error()));
-      await ensureTimesOut(barrier, false);
-    },
-  );
+  it.concurrent('resolves free immediately with already settled promises', async () => {
+    const barrier = new PromiseBarrier();
+    barrier.add(Promise.resolve());
+    barrier.add(Promise.reject(new Error()));
+    await ensureTimesOut(barrier, false);
+  });
 
   it.concurrent('waits for pending promises to settle', async () => {
     const barrier = new PromiseBarrier();
