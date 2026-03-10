@@ -87,9 +87,7 @@ export class Latch {
     this.close();
     return {
       [Symbol.dispose]: () => {
-        !--this.m_inUse &&
-          (condition === undefined || condition()) &&
-          this.open();
+        !--this.m_inUse && (condition === undefined || condition()) && this.open();
       },
     };
   }

@@ -135,11 +135,11 @@ export class Mutex {
  * @example
  * ```typescript
  * const mutexRW = new MutexRW();
- * const releaseRO = await mutexRW.obtainRO();
+ * const releaseRead = await mutexRW.obtainRead();
  * try {
  *   // Read operation
  * } finally {
- *   releaseRO();
+ *   releaseRead();
  * }
  * ```
  */
@@ -302,9 +302,7 @@ export class MutexRW {
     --this.m_readWaitingCount;
     ++this.m_activeReadCount;
     let releaseRead = releaseStub;
-    const thisReadPromise = new Promise<void>(
-      resolve => (releaseRead = resolve),
-    );
+    const thisReadPromise = new Promise<void>(resolve => (releaseRead = resolve));
     this.m_lastROPromise = Promise.all([thisReadPromise, this.m_lastROPromise]);
     void thisReadPromise.then(() => --this.m_activeReadCount);
     // Uncomment to detect deadlocks
@@ -344,9 +342,7 @@ export class MutexRW {
   public async obtainWrite(): Promise<() => void> {
     let releaseWrite = releaseStub;
     const prevWritePromise = this.m_nextRWPromise;
-    const thisWritePromise = new Promise<void>(
-      resolve => (releaseWrite = resolve),
-    );
+    const thisWritePromise = new Promise<void>(resolve => (releaseWrite = resolve));
     this.m_nextRWPromise = thisWritePromise;
     ++this.m_writeWaitingCount;
     await prevWritePromise;

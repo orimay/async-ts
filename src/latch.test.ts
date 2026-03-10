@@ -2,10 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Latch, timeout } from '.';
 
 async function ensureTimesOut(latch: Latch, timesOut = true) {
-  const timedOut = await Promise.race([
-    latch.gate.then(() => false),
-    timeout(10).then(() => true),
-  ]);
+  const timedOut = await Promise.race([latch.gate.then(() => false), timeout(10).then(() => true)]);
   expect(timedOut).toBe(timesOut);
 }
 

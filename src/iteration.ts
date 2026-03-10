@@ -20,10 +20,7 @@
  * console.log(result); // [2, 4]
  * ```
  */
-export async function filter<T>(
-  arr: T[],
-  predicate: (value: T) => Promise<boolean>,
-) {
+export async function filter<T>(arr: T[], predicate: (value: T) => Promise<boolean>) {
   const results = await Promise.all(arr.map(predicate));
   return arr.filter((_v, index) => results[index]);
 }
@@ -49,10 +46,7 @@ export async function filter<T>(
  * console.log(result); // true
  * ```
  */
-export async function pSome<T>(
-  iter: Iterable<T>,
-  pred: (value: T) => Promise<boolean>,
-) {
+export async function pSome<T>(iter: Iterable<T>, pred: (value: T) => Promise<boolean>) {
   for (const value of iter) {
     if (await pred(value)) {
       return true;
@@ -81,10 +75,7 @@ export async function pSome<T>(
  * console.log(result); // true
  * ```
  */
-export async function pNone<T>(
-  iter: Iterable<T>,
-  pred: (value: T) => Promise<boolean>,
-) {
+export async function pNone<T>(iter: Iterable<T>, pred: (value: T) => Promise<boolean>) {
   for (const value of iter) {
     if (await pred(value)) {
       return false;
@@ -114,10 +105,7 @@ export async function pNone<T>(
  * console.log(result); // true
  * ```
  */
-export async function pEvery<T>(
-  iter: Iterable<T>,
-  pred: (value: T) => Promise<boolean>,
-) {
+export async function pEvery<T>(iter: Iterable<T>, pred: (value: T) => Promise<boolean>) {
   for (const value of iter) {
     if (!(await pred(value))) {
       return false;

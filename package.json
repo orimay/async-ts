@@ -9,26 +9,29 @@
     "async-filter",
     "async-generator",
     "barrier",
+    "browser",
     "concurrency",
     "disposable",
     "event-loop",
+    "full-stack",
+    "javascript",
     "latch",
     "lock",
     "macrotask",
     "microtask",
     "mutex",
+    "node-js",
+    "performance",
     "promise",
-    "promise-barrier",
     "promise-every",
     "promise-none",
     "promise-some",
     "read-write-lock",
-    "rwlock",
     "synchronization",
     "task-scheduling",
-    "timeout",
     "typescript",
-    "using-statement"
+    "using-statement",
+    "utilities"
   ],
   "homepage": "https://github.com/orimay/async-ts#readme",
   "bugs": {
@@ -43,8 +46,8 @@
   "files": [
     "dist"
   ],
-  "sideEffects": false,
   "type": "module",
+  "sideEffects": false,
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -58,9 +61,9 @@
   "scripts": {
     "build": "tsdown",
     "dev": "tsdown --watch",
+    "release": "bun run test -- run && bun run build && bumpp && bun publish",
     "test": "vitest",
-    "typecheck": "tsc --noEmit",
-    "release": "bun run test -- run && bun run build && bumpp && bun publish"
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@types/node": "^24.9.1",
